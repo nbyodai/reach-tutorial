@@ -9,11 +9,24 @@ const accEmeka = await stdlib.newTestAccount(startingBalance);
 const ctcChinwe = accChinwe.contract(backend);
 const ctcEmeka = accEmeka.contract(backend, ctcChinwe.getInfo());
 
+const HAND = ['Rock', 'Paper', 'Scissors'];
+const OUTCOME = ['Emeka Wins', 'Draw', 'Chinwe wins'];
+const Player = (Who) => ({
+    getHand: () => {
+        const hand = Math.floor(Math.random() * 3)
+        console.log(`${Who} played ${HAND[hand]}`);
+        return hand;
+    },
+    seeOutcome: (outcome) => {
+        console.log(`${Who} saw outcome ${OUTCOME[outcome]}`);
+    },
+})
+
 await Promise.all([
     ctcChinwe.p.Chinwe({
-        // implement Chinwe's interact object here
+        ...Player('Chinwe'),
     }),
     ctcEmeka.p.Emeka({
-        // implement Emeka's interact object here
+        ...Player('Emeka'),
     }),
 ]);
