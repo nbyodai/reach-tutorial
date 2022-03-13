@@ -21,12 +21,14 @@ const Player = {
     ...hasRandom,
     getHand: Fun([], UInt),
     seeOutcome: Fun([UInt], Null),
+    informTimeout: Fun([], Null),
 };
 
 export const main = Reach.App(() => {
     const Chinwe = Participant('Chinwe', {
         ...Player,
         wager: UInt,
+        deadline: UInt,
     });
     const Emeka = Participant('Emeka', {
         ...Player,
@@ -34,13 +36,20 @@ export const main = Reach.App(() => {
     });
     init();
     // write program here
+    const informTimeout = () => {
+        each([Chinwe, Emeka], () => {
+            interact.informTimeout();
+        });
+    };
+
     Chinwe.only(() => {
         const wager = declassify(interact.wager);
         const _handChinwe = interact.getHand();
         const [_commitChinwe, _saltChinwe] = makeCommitment(interact, _handChinwe);
         const commitChinwe = declassify(_commitChinwe);
+        const deadline = declassify(interact.deadline)
     });
-    Chinwe.publish(wager, commitChinwe)
+    Chinwe.publish(wager, commitChinwe, deadline)
         .pay(wager);
     commit();
 
@@ -50,14 +59,16 @@ export const main = Reach.App(() => {
         const handEmeka = declassify(interact.getHand());
     });
     Emeka.publish(handEmeka)
-        .pay(wager);
+        .pay(wager)
+        .timeout(relativeTime(deadline), () => closeTo(Chinwe, informTimeout));
     commit();
 
     Chinwe.only(() => {
         const saltChinwe = declassify(_saltChinwe);
         const handChinwe = declassify(_handChinwe);
     });
-    Chinwe.publish(saltChinwe, handChinwe);
+    Chinwe.publish(saltChinwe, handChinwe)
+        .timeout(relativeTime(deadline), () => closeTo(Emeka, informTimeout));
     checkCommitment(commitChinwe, saltChinwe, handChinwe);
 
     const outcome = winner(handChinwe, handEmeka);

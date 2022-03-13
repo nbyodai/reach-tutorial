@@ -26,17 +26,28 @@ const Player = (Who) => ({
     seeOutcome: (outcome) => {
         console.log(`${Who} saw outcome ${OUTCOME[outcome]}`);
     },
+    informTimeout: () => {
+        console.log(`${Who} observed a timeout`);
+    },
 })
 
 await Promise.all([
     ctcChinwe.p.Chinwe({
         ...Player('Chinwe'),
-        wager: stdlib.parseCurrency(5)
+        wager: stdlib.parseCurrency(5),
+        deadline: 10,
     }),
     ctcEmeka.p.Emeka({
         ...Player('Emeka'),
-        acceptWager: (amt) => {
-            console.log(`Emeka accepts the wager of ${fmt(amt)}.`);
+        acceptWager: async (amt) => {
+            if ( Math.random() <= 0.5 ) {
+                for (let i = 0; i < 10; i++) {
+                    console.log(` Emeka takes his sweet time...`);
+                    await stdlib.wait(1);
+                }
+            } else {
+                console.log(`Emeka accepts the wager of ${fmt(amt)}.`);
+            }
         },
     }),
 ]);
@@ -44,5 +55,5 @@ await Promise.all([
 const afterChinwe = await getBalance(accChinwe);
 const afterEmeka = await getBalance(accEmeka);
 
-console.log(`Alice went from ${beforeChinwe} to ${afterChinwe}.`);
-console.log(`Bob went from ${beforeEmeka} to ${afterEmeka}.`);
+console.log(`Chinwe went from ${beforeChinwe} to ${afterChinwe}.`);
+console.log(`Emeka went from ${beforeEmeka} to ${afterEmeka}.`);
