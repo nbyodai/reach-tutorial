@@ -44,40 +44,54 @@ export const main = Reach.App(() => {
 
     Chinwe.only(() => {
         const wager = declassify(interact.wager);
-        const _handChinwe = interact.getHand();
-        const [_commitChinwe, _saltChinwe] = makeCommitment(interact, _handChinwe);
-        const commitChinwe = declassify(_commitChinwe);
         const deadline = declassify(interact.deadline)
-    });
-    Chinwe.publish(wager, commitChinwe, deadline)
+    })
+    Chinwe.publish(wager, deadline)
         .pay(wager);
     commit();
 
-    unknowable(Emeka, Chinwe(_handChinwe, _saltChinwe));
     Emeka.only(() => {
         interact.acceptWager(wager);
-        const handEmeka = declassify(interact.getHand());
     });
-    Emeka.publish(handEmeka)
-        .pay(wager)
+    Emeka.pay(wager)
         .timeout(relativeTime(deadline), () => closeTo(Chinwe, informTimeout));
-    commit();
 
-    Chinwe.only(() => {
-        const saltChinwe = declassify(_saltChinwe);
-        const handChinwe = declassify(_handChinwe);
-    });
-    Chinwe.publish(saltChinwe, handChinwe)
-        .timeout(relativeTime(deadline), () => closeTo(Emeka, informTimeout));
-    checkCommitment(commitChinwe, saltChinwe, handChinwe);
+    var outcome = DRAW;
+    invariant( balance() == 2 * wager && isOutcome(outcome) );
+    while (outcome == DRAW ){
+        commit();
 
-    const outcome = winner(handChinwe, handEmeka);
-    const                    [forChinwe, forEmeka] =
-        outcome == A_WINS ?  [      2,          0] :
-        outcome == B_WINS ?  [      0,          2] :
-        /* tie    */         [      1,          1];
-    transfer(forChinwe * wager).to(Chinwe);
-    transfer(forEmeka  * wager).to(Emeka);
+        Chinwe.only(() => {
+            const _handChinwe = interact.getHand();
+            const [_commitChinwe, _saltChinwe] = makeCommitment(interact, _handChinwe);
+            const commitChinwe = declassify(_commitChinwe);
+        });
+        Chinwe.publish(commitChinwe)
+            .timeout(relativeTime(deadline), () => closeTo(Emeka, informTimeout));
+        commit();
+
+        unknowable(Emeka, Chinwe(_handChinwe, _saltChinwe));
+        Emeka.only(() => {
+            const handEmeka = declassify(interact.getHand());
+        });
+        Emeka.publish(handEmeka)
+            .timeout(relativeTime(deadline), () => closeTo(Chinwe, informTimeout));
+        commit();
+
+        Chinwe.only(() => {
+            const saltChinwe = declassify(_saltChinwe);
+            const handChinwe = declassify(_handChinwe);
+        });
+        Chinwe.publish(saltChinwe, handChinwe)
+            .timeout(relativeTime(deadline), () => closeTo(Emeka, informTimeout));
+        checkCommitment(commitChinwe, saltChinwe, handChinwe);
+
+        outcome = winner(handChinwe, handEmeka);
+        continue;
+    }
+
+    assert(outcome == A_WINS || outcome == B_WINS)
+    transfer(2 * wager).to(outcome == A_WINS ? Chinwe : Emeka);
     commit();
 
     each([Chinwe, Emeka], () => {
